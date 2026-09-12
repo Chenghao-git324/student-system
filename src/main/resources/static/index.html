@@ -208,6 +208,20 @@
     color: #666;
   }
 
+  /* 非管理员：隐藏所有"写操作"相关元素 */
+  body.not-admin .admin-only { display: none !important; }
+
+  /* 普通用户提示条 */
+  .readonly-tip {
+    background: #fff8e6;
+    border: 1px solid #ffe0a3;
+    color: #b8860b;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+
   /* 响应式 */
   @media (max-width: 600px) {
     .body { padding: 20px 16px; }
@@ -235,8 +249,13 @@
     <!-- 提示消息 -->
     <div id="tip" class="tip"></div>
 
-    <!-- 新增/编辑表单 -->
-    <div class="form-card">
+    <!-- 普通用户提示（仅非管理员显示） -->
+    <div id="readonlyTip" class="readonly-tip" style="display:none">
+      👀 您当前是普通用户，只能查看数据。增删改操作仅管理员可用。
+    </div>
+
+    <!-- 新增/编辑表单（仅管理员可见） -->
+    <div class="form-card admin-only">
       <div class="form-title" id="formTitle">➕ 新增学生</div>
       <div class="form">
         <div class="form-group">
@@ -287,8 +306,8 @@
       </div>
     </div>
 
-    <!-- 表格工具栏 -->
-    <div class="table-toolbar">
+    <!-- 表格工具栏（仅管理员可见） -->
+    <div class="table-toolbar admin-only">
       <span class="selected-count" id="selectedCount">未选中任何学生</span>
       <button class="btn-batch-del" id="btnBatchDel" onclick="batchDelete()" disabled>批量删除</button>
     </div>
@@ -297,13 +316,13 @@
     <table>
       <thead>
         <tr>
-          <th style="width:40px"><input type="checkbox" id="checkAll" onclick="toggleAll()"></th>
+          <th style="width:40px" class="admin-only"><input type="checkbox" id="checkAll" onclick="toggleAll()"></th>
           <th>ID</th>
           <th>姓名</th>
           <th>年龄</th>
           <th>性别</th>
           <th>班级</th>
-          <th>操作</th>
+          <th class="admin-only">操作</th>
         </tr>
       </thead>
       <tbody id="tbody">
@@ -381,8 +400,32 @@
   const pageSize = 5;       // 每页 5 条
   let searchMode = false;   // 是否处于"搜索结果"状态
 
+  // 从 token 里解出角色（跟取用户名一个套路）
+  function getRoleFromToken() {
+    try {
+      const payload = token.split('.')[1];
+      const bytes = Uint8Array.from(atob(payload), c => c.charCodeAt(0));
+      const json = new TextDecoder().decode(bytes);
+      return JSON.parse(json).role;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  // 当前用户是不是管理员
+  const isAdmin = (getRoleFromToken() === 'admin');
+
   window.onload = function () {
-    document.getElementById('currentUser').textContent = '👤 ' + getUsernameFromToken();
+    // 右上角显示 用户名 + 身份
+    document.getElementById('currentUser').textContent =
+      '👤 ' + getUsernameFromToken() + (isAdmin ? '（管理员）' : '（普通用户）');
+
+    // 不是管理员 → 给 body 加个标记，CSS 会自动把所有"写操作"元素藏起来
+    if (!isAdmin) {
+      document.body.classList.add('not-admin');
+      document.getElementById('readonlyTip').style.display = 'block';
+    }
+
     loadClasses();
     loadList();
   };
@@ -432,13 +475,13 @@
       const cls = s.className ? s.className : '<span style="color:#c0c4cc">未分班</span>';
       html += `
         <tr>
-          <td><input type="checkbox" class="row-check" value="${s.id}" onclick="updateSelectedCount()"></td>
+          <td class="admin-only"><input type="checkbox" class="row-check" value="${s.id}" onclick="updateSelectedCount()"></td>
           <td><span class="id-badge">#${s.id}</span></td>
           <td>${s.name}</td>
           <td>${s.age}</td>
           <td>${gtag}</td>
           <td>${cls}</td>
-          <td>
+          <td class="admin-only">
             <button class="btn-edit" onclick="editStudent(${s.id}, '${s.name}', ${s.age}, '${s.gender}', ${s.classId})">编辑</button>
             <button class="btn-del" onclick="deleteStudent(${s.id})">删除</button>
           </td>

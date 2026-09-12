@@ -12,6 +12,7 @@ import java.util.Date;
 public class JwtUtil {
 
     // 密钥（相当于"印章"），HS256 算法要求至少 32 个字符
+    // ⚠️ 生产环境请换成自己的随机密钥，且不要提交到公开仓库
     private static final String SECRET = "studentSystemSecretKeyForJwt1234567890";
 
     // 把密钥字符串变成密钥对象

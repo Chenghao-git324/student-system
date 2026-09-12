@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>学生管理系统</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    overflow: hidden;
+  }
+
+  /* 顶部标题栏 */
+  .header {
+    background: linear-gradient(135deg, #4a6cf7 0%, #6a3de8 100%);
+    color: #fff;
+    padding: 28px 32px;
+  }
+  .header h1 { font-size: 26px; font-weight: 600; letter-spacing: 1px; }
+  .header p { font-size: 13px; opacity: .85; margin-top: 6px; }
+
+  /* 右上角：当前用户 + 退出 */
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .user-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    background: rgba(255,255,255,.15);
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .btn-logout {
+    background: rgba(255,255,255,.25);
+    color: #fff;
+    padding: 4px 12px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,.45); }
+
+  .body { padding: 28px 32px; }
+
+  /* 提示消息 */
+  .tip {
+    display: none;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 14px;
+  }
+  .tip.success { background: #f0f9eb; color: #529b2e; border: 1px solid #e1f3d8; }
+  .tip.error { background: #fef0f0; color: #d9534f; border: 1px solid #fde2e2; }
+
+  /* 卡片通用 */
+  .form-card {
+    background: #f8f9fc;
+    border: 1px solid #eef0f5;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .form-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 16px; }
+
+  .form {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 13px; color: #666; }
+
+  input, select {
+    padding: 10px 14px;
+    border: 1.5px solid #dcdfe6;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 150px;
+    outline: none;
+    transition: border .2s, box-shadow .2s;
+    background: #fff;
+  }
+  input:focus, select:focus { border-color: #4a6cf7; box-shadow: 0 0 0 3px rgba(74,108,247,.12); }
+  input.error { border-color: #d9534f; }
+
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .2s;
+    font-weight: 500;
+  }
+  .btn-add { background: #4a6cf7; color: #fff; }
+  .btn-add:hover { background: #3a5ae0; transform: translateY(-1px); }
+  .btn-save { background: #34c759; color: #fff; }
+  .btn-save:hover { background: #2cb14b; }
+  .btn-cancel { background: #a0a5b0; color: #fff; }
+  .btn-cancel:hover { background: #8d929e; }
+  .btn-search { background: #4a6cf7; color: #fff; }
+  .btn-search:hover { background: #3a5ae0; }
+  .btn-reset { background: #a0a5b0; color: #fff; }
+  .btn-reset:hover { background: #8d929e; }
+
+  /* 表格工具栏（批量删除） */
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .btn-batch-del { background: #ef4444; color: #fff; padding: 8px 16px; font-size: 13px; }
+  .btn-batch-del:hover { background: #dc2626; }
+  .btn-batch-del:disabled { background: #f0a8a8; cursor: not-allowed; }
+  .selected-count { font-size: 13px; color: #666; }
+
+  /* 表格 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  th, td {
+    padding: 14px 12px;
+    text-align: center;
+    font-size: 14px;
+  }
+  thead th {
+    background: #4a6cf7;
+    color: #fff;
+    font-weight: 500;
+  }
+  tbody tr { border-bottom: 1px solid #f0f2f7; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f6f8ff; }
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  .id-badge {
+    display: inline-block;
+    background: #eef1ff;
+    color: #4a6cf7;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .gender-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+  }
+  .gender-m { background: #e8f3ff; color: #2f7cd6; }
+  .gender-f { background: #ffeef5; color: #d64b7d; }
+
+  .btn-edit { background: #f59e0b; color: #fff; padding: 6px 14px; margin-right: 6px; font-size: 13px; }
+  .btn-edit:hover { background: #e08a00; }
+  .btn-del { background: #ef4444; color: #fff; padding: 6px 14px; font-size: 13px; }
+  .btn-del:hover { background: #dc2626; }
+
+  .empty { text-align: center; color: #a0a5b0; padding: 40px; }
+
+  /* 分页栏 */
+  .pager {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .pager button {
+    background: #4a6cf7;
+    color: #fff;
+    padding: 8px 18px;
+  }
+  .pager button:disabled {
+    background: #c6cbd9;
+    cursor: not-allowed;
+  }
+  .pager span {
+    font-size: 14px;
+    color: #666;
+  }
+
+  /* 响应式 */
+  @media (max-width: 600px) {
+    .body { padding: 20px 16px; }
+    .form { flex-direction: column; align-items: stretch; }
+    input, select { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>🎓 学生管理系统</h1>
+        <p>学生信息的增删改查 · 基于 Spring Boot + MyBatis + MySQL</p>
+      </div>
+      <div class="user-box">
+        <span id="currentUser">👤</span>
+        <button class="btn-logout" onclick="logout()">退出</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+    <!-- 提示消息 -->
+    <div id="tip" class="tip"></div>
+
+    <!-- 新增/编辑表单 -->
+    <div class="form-card">
+      <div class="form-title" id="formTitle">➕ 新增学生</div>
+      <div class="form">
+        <div class="form-group">
+          <label>姓名</label>
+          <input id="name" placeholder="请输入姓名">
+        </div>
+        <div class="form-group">
+          <label>年龄</label>
+          <input id="age" type="number" placeholder="1 - 120">
+        </div>
+        <div class="form-group">
+          <label>性别</label>
+          <select id="gender">
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </div>
+        <button class="btn-add" id="btnAdd" onclick="addStudent()">新增</button>
+        <button class="btn-save" id="btnSave" style="display:none" onclick="saveEdit()">保存</button>
+        <button class="btn-cancel" id="btnCancel" style="display:none" onclick="cancelEdit()">取消</button>
+      </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="form-card">
+      <div class="form-title">🔍 搜索学生</div>
+      <div class="form">
+        <div class="form-group">
+          <label>姓名</label>
+          <input id="searchName" placeholder="姓名关键字，可留空">
+        </div>
+        <div class="form-group">
+          <label>性别</label>
+          <select id="searchGender">
+            <option value="">全部</option>
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </div>
+        <button class="btn-search" onclick="search()">搜索</button>
+        <button class="btn-reset" onclick="resetSearch()">重置</button>
+      </div>
+    </div>
+
+    <!-- 表格工具栏 -->
+    <div class="table-toolbar">
+      <span class="selected-count" id="selectedCount">未选中任何学生</span>
+      <button class="btn-batch-del" id="btnBatchDel" onclick="batchDelete()" disabled>批量删除</button>
+    </div>
+
+    <!-- 学生表格 -->
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px"><input type="checkbox" id="checkAll" onclick="toggleAll()"></th>
+          <th>ID</th>
+          <th>姓名</th>
+          <th>年龄</th>
+          <th>性别</th>
+          <th>班级</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td class="empty" colspan="7">加载中...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- 分页栏 -->
+    <div class="pager">
+      <button id="btnPrev" onclick="prevPage()">上一页</button>
+      <span id="pageInfo">第 1 页</span>
+      <button id="btnNext" onclick="nextPage()">下一页</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ========== 登录相关 ==========
+  const token = localStorage.getItem('token');
+
+  // 没有 token → 直接踢回登录页
+  if (!token) {
+    location.href = 'login.html';
+  }
+
+  // 从 token 里解出用户名（token 第二段是明文，base64 解码就能看到）
+  function getUsernameFromToken() {
+    try {
+      const payload = token.split('.')[1];
+      // 不能直接用 atob：atob 按"1字节=1字符"解，遇到中文（UTF-8 占 3 字节）会乱码
+      // 正确做法：先解成字节，再按 UTF-8 解成字符串
+      const bytes = Uint8Array.from(atob(payload), c => c.charCodeAt(0));
+      const json = new TextDecoder().decode(bytes);
+      return JSON.parse(json).sub;
+    } catch (e) {
+      return '未知用户';
+    }
+  }
+
+  // 带 token 的请求：所有接口调用都走这个，自动加上 Authorization 请求头
+  function authFetch(url, options) {
+    options = options || {};
+    options.headers = options.headers || {};
+    options.headers['Authorization'] = 'Bearer ' + token;
+
+    return fetch(url, options).then(res => {
+      // 后端拦截器返回 401 = 没登录 / token 失效 → 清掉 token，踢回登录页
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        alert('登录已过期，请重新登录');
+        location.href = 'login.html';
+        return Promise.reject('未登录');
+      }
+      return res;
+    });
+  }
+
+  // 退出登录
+  function logout() {
+    if (!confirm('确定要退出登录吗？')) return;
+    localStorage.removeItem('token');
+    location.href = 'login.html';
+  }
+  // ==============================
+
+  let editingId = null;     // 正在编辑的学生 id（null 表示新增）
+  let currentPage = 1;      // 当前第几页
+  const pageSize = 5;       // 每页 5 条
+  let searchMode = false;   // 是否处于"搜索结果"状态
+
+  window.onload = function () {
+    document.getElementById('currentUser').textContent = '👤 ' + getUsernameFromToken();
+    loadList();
+  };
+
+  // 分页查询学生
+  function loadList() {
+    searchMode = false;
+    authFetch('/student/page?page=' + currentPage + '&size=' + pageSize)
+      .then(res => res.json())
+      .then(data => {
+        const list = data.list;
+        const total = data.total;
+        renderTable(list);
+        renderPager(total);
+      })
+      .catch(err => showTip('加载失败：' + err, 'error'));
+  }
+
+  // 渲染表格内容
+  function renderTable(list) {
+    const tbody = document.getElementById('tbody');
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td class="empty" colspan="7">暂无数据，先新增一个吧 ✏️</td></tr>';
+      document.getElementById('checkAll').checked = false;
+      updateSelectedCount();
+      return;
+    }
+    let html = '';
+    list.forEach(s => {
+      const gtag = s.gender === '女'
+        ? '<span class="gender-tag gender-f">女</span>'
+        : '<span class="gender-tag gender-m">男</span>';
+      const cls = s.className ? s.className : '<span style="color:#c0c4cc">未分班</span>';
+      html += `
+        <tr>
+          <td><input type="checkbox" class="row-check" value="${s.id}" onclick="updateSelectedCount()"></td>
+          <td><span class="id-badge">#${s.id}</span></td>
+          <td>${s.name}</td>
+          <td>${s.age}</td>
+          <td>${gtag}</td>
+          <td>${cls}</td>
+          <td>
+            <button class="btn-edit" onclick="editStudent(${s.id}, '${s.name}', ${s.age}, '${s.gender}')">编辑</button>
+            <button class="btn-del" onclick="deleteStudent(${s.id})">删除</button>
+          </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+    document.getElementById('checkAll').checked = false;
+    updateSelectedCount();
+  }
+
+  // 渲染分页栏
+  function renderPager(total) {
+    const totalPages = Math.ceil(total / pageSize);
+    document.getElementById('pageInfo').textContent =
+      '第 ' + currentPage + ' / ' + totalPages + ' 页 · 共 ' + total + ' 条';
+    document.getElementById('btnPrev').disabled = (currentPage <= 1);
+    document.getElementById('btnNext').disabled = (currentPage >= totalPages);
+  }
+
+  // 搜索
+  function search() {
+    const name = document.getElementById('searchName').value.trim();
+    const gender = document.getElementById('searchGender').value;
+    searchMode = true;
+
+    // 拼接查询参数（可能为空）
+    let url = '/student/search';
+    const params = [];
+    if (name) params.push('name=' + encodeURIComponent(name));
+    if (gender) params.push('gender=' + encodeURIComponent(gender));
+    if (params.length > 0) url += '?' + params.join('&');
+
+    authFetch(url)
+      .then(res => res.json())
+      .then(data => {
+        renderTable(data);
+        // 搜索状态下隐藏分页，只显示"共 X 条"
+        document.getElementById('pageInfo').textContent = '搜索结果 · 共 ' + data.length + ' 条';
+        document.getElementById('btnPrev').disabled = true;
+        document.getElementById('btnNext').disabled = true;
+      })
+      .catch(err => showTip('搜索失败：' + err, 'error'));
+  }
+
+  // 重置搜索（回到分页列表）
+  function resetSearch() {
+    document.getElementById('searchName').value = '';
+    document.getElementById('searchGender').value = '';
+    currentPage = 1;
+    loadList();
+  }
+
+  // 上一页
+  function prevPage() {
+    if (currentPage > 1) {
+      currentPage--;
+      loadList();
+    }
+  }
+
+  // 下一页
+  function nextPage() {
+    currentPage++;
+    loadList();
+  }
+
+  // 全选 / 全不选
+  function toggleAll() {
+    const checked = document.getElementById('checkAll').checked;
+    document.querySelectorAll('.row-check').forEach(cb => { cb.checked = checked; });
+    updateSelectedCount();
+  }
+
+  // 收集所有选中的 id
+  function getSelectedIds() {
+    const ids = [];
+    document.querySelectorAll('.row-check:checked').forEach(cb => {
+      ids.push(parseInt(cb.value));
+    });
+    return ids;
+  }
+
+  // 更新"已选中 N 条"提示 + 批量删除按钮状态
+  function updateSelectedCount() {
+    const count = getSelectedIds().length;
+    document.getElementById('selectedCount').textContent =
+      count === 0 ? '未选中任何学生' : '已选中 ' + count + ' 条';
+    document.getElementById('btnBatchDel').disabled = (count === 0);
+  }
+
+  // 批量删除
+  function batchDelete() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) { showTip('请先勾选要删除的学生', 'error'); return; }
+    if (!confirm('确定要删除选中的 ' + ids.length + ' 条学生吗？')) return;
+
+    authFetch('/student/batch', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ids)
+    })
+      .then(res => res.text())
+      .then(msg => {
+        showTip(msg, 'success');
+        if (searchMode) { search(); } else { loadList(); }
+      })
+      .catch(err => showTip('批量删除失败：' + err, 'error'));
+  }
+
+  // 校验年龄
+  function validAge(age) {
+    if (age === '') { showTip('请输入年龄', 'error'); return false; }
+    const n = parseInt(age);
+    if (isNaN(n)) { showTip('年龄必须是数字', 'error'); return false; }
+    if (n < 1 || n > 120) { showTip('年龄必须在 1~120 之间', 'error'); return false; }
+    return true;
+  }
+
+  // 新增学生
+  function addStudent() {
+    const name = document.getElementById('name').value.trim();
+    const age = document.getElementById('age').value.trim();
+    const gender = document.getElementById('gender').value;
+
+    if (!name) { showTip('请输入姓名', 'error'); return; }
+    if (!validAge(age)) return;
+
+    authFetch('/student', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, age: parseInt(age), gender })
+    })
+      .then(res => res.text())
+      .then(msg => {
+        showTip(msg, 'success');
+        clearForm();
+        loadList();
+      })
+      .catch(err => showTip('新增失败：' + err, 'error'));
+  }
+
+  // 点击"编辑"
+  function editStudent(id, name, age, gender) {
+    editingId = id;
+    document.getElementById('name').value = name;
+    document.getElementById('age').value = age;
+    document.getElementById('gender').value = gender;
+
+    document.getElementById('formTitle').textContent = '✏️ 编辑学生 #' + id;
+    document.getElementById('btnAdd').style.display = 'none';
+    document.getElementById('btnSave').style.display = 'inline-block';
+    document.getElementById('btnCancel').style.display = 'inline-block';
+  }
+
+  // 保存编辑
+  function saveEdit() {
+    const name = document.getElementById('name').value.trim();
+    const age = document.getElementById('age').value.trim();
+    const gender = document.getElementById('gender').value;
+
+    if (!name) { showTip('请输入姓名', 'error'); return; }
+    if (!validAge(age)) return;
+
+    authFetch('/student', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editingId, name, age: parseInt(age), gender })
+    })
+      .then(res => res.text())
+      .then(msg => {
+        showTip(msg, 'success');
+        cancelEdit();
+        loadList();
+      })
+      .catch(err => showTip('修改失败：' + err, 'error'));
+  }
+
+  // 取消编辑
+  function cancelEdit() {
+    editingId = null;
+    clearForm();
+    document.getElementById('formTitle').textContent = '➕ 新增学生';
+    document.getElementById('btnAdd').style.display = 'inline-block';
+    document.getElementById('btnSave').style.display = 'none';
+    document.getElementById('btnCancel').style.display = 'none';
+  }
+
+  // 删除学生
+  function deleteStudent(id) {
+    if (!confirm('确定要删除 id=' + id + ' 的学生吗？')) return;
+
+    authFetch('/student/' + id, { method: 'DELETE' })
+      .then(res => res.text())
+      .then(msg => {
+        showTip(msg, 'success');
+        if (searchMode) { search(); } else { loadList(); }
+      })
+      .catch(err => showTip('删除失败：' + err, 'error'));
+  }
+
+  // 清空表单
+  function clearForm() {
+    document.getElementById('name').value = '';
+    document.getElementById('age').value = '';
+    document.getElementById('gender').value = '男';
+  }
+
+  // 显示提示
+  function showTip(msg, type) {
+    const tip = document.getElementById('tip');
+    tip.textContent = msg;
+    tip.className = 'tip ' + type;
+    tip.style.display = 'block';
+    setTimeout(() => { tip.style.display = 'none'; }, 2500);
+  }
+</script>
+</body>
+</html>

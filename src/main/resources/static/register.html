@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>注册 · 学生管理系统</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .register-box {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    overflow: hidden;
+  }
+
+  .register-header {
+    background: linear-gradient(135deg, #4a6cf7 0%, #6a3de8 100%);
+    color: #fff;
+    padding: 32px;
+    text-align: center;
+  }
+  .register-header h1 { font-size: 24px; font-weight: 600; letter-spacing: 1px; }
+  .register-header p { font-size: 13px; opacity: .85; margin-top: 8px; }
+
+  .register-body { padding: 32px; }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #dcdfe6;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border .2s, box-shadow .2s;
+  }
+  .field input:focus {
+    border-color: #4a6cf7;
+    box-shadow: 0 0 0 3px rgba(74,108,247,.12);
+  }
+
+  .btn-register {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #34c759;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 6px;
+  }
+  .btn-register:hover { background: #2cb14b; transform: translateY(-1px); }
+  .btn-register:active { transform: translateY(0); }
+
+  /* 错误 / 成功提示 */
+  .msg {
+    display: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .msg.error { background: #fef0f0; color: #d9534f; border: 1px solid #fde2e2; }
+  .msg.success { background: #f0f9eb; color: #529b2e; border: 1px solid #e1f3d8; }
+
+  .bottom-link {
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+    margin-top: 20px;
+  }
+  .bottom-link a {
+    color: #4a6cf7;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .bottom-link a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="register-box">
+  <div class="register-header">
+    <h1>🎓 学生管理系统</h1>
+    <p>注册新账号</p>
+  </div>
+
+  <div class="register-body">
+    <div id="msg" class="msg"></div>
+
+    <div class="field">
+      <label>用户名</label>
+      <input id="username" placeholder="请输入用户名" autocomplete="username">
+    </div>
+
+    <div class="field">
+      <label>密码</label>
+      <input id="password" type="password" placeholder="至少 6 位" autocomplete="new-password">
+    </div>
+
+    <div class="field">
+      <label>确认密码</label>
+      <input id="confirm" type="password" placeholder="请再输一次密码" autocomplete="new-password">
+    </div>
+
+    <button class="btn-register" onclick="doRegister()">注 册</button>
+
+    <div class="bottom-link">
+      已有账号？<a href="login.html">去登录</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 支持按回车注册
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { doRegister(); }
+  });
+
+  function doRegister() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirm').value;
+
+    // ===== 前端先检查一遍（减少无用的请求）=====
+    if (!username) { showMsg('请输入用户名', 'error'); return; }
+    if (username.length < 2) { showMsg('用户名至少 2 个字符', 'error'); return; }
+    if (!password) { showMsg('请输入密码', 'error'); return; }
+    if (password.length < 6) { showMsg('密码至少 6 位', 'error'); return; }
+    if (password !== confirm) { showMsg('两次输入的密码不一致', 'error'); return; }
+
+    // ===== 发给后端 =====
+    fetch('/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, password: password })
+    })
+      .then(res => res.text())
+      .then(text => {
+        if (text === '注册成功') {
+          showMsg('注册成功，正在跳转到登录页...', 'success');
+          setTimeout(() => { location.href = 'login.html'; }, 1200);
+        } else {
+          // 后端返回的错误，如"用户名已存在"
+          showMsg(text, 'error');
+        }
+      })
+      .catch(err => showMsg('注册失败：' + err, 'error'));
+  }
+
+  function showMsg(text, type) {
+    const msg = document.getElementById('msg');
+    msg.textContent = text;
+    msg.className = 'msg ' + type;
+    msg.style.display = 'block';
+  }
+</script>
+
+</body>
+</html>

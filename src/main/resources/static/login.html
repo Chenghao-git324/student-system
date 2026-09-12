@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>登录 · 学生管理系统</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .login-box {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    overflow: hidden;
+  }
+
+  .login-header {
+    background: linear-gradient(135deg, #4a6cf7 0%, #6a3de8 100%);
+    color: #fff;
+    padding: 32px;
+    text-align: center;
+  }
+  .login-header h1 { font-size: 24px; font-weight: 600; letter-spacing: 1px; }
+  .login-header p { font-size: 13px; opacity: .85; margin-top: 8px; }
+
+  .login-body { padding: 32px; }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #dcdfe6;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border .2s, box-shadow .2s;
+  }
+  .field input:focus {
+    border-color: #4a6cf7;
+    box-shadow: 0 0 0 3px rgba(74,108,247,.12);
+  }
+
+  .btn-login {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #4a6cf7;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 6px;
+  }
+  .btn-login:hover { background: #3a5ae0; transform: translateY(-1px); }
+  .btn-login:active { transform: translateY(0); }
+
+  /* 错误 / 成功提示 */
+  .msg {
+    display: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .msg.error { background: #fef0f0; color: #d9534f; border: 1px solid #fde2e2; }
+  .msg.success { background: #f0f9eb; color: #529b2e; border: 1px solid #e1f3d8; }
+
+  .bottom-link {
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+    margin-top: 20px;
+  }
+  .bottom-link a {
+    color: #4a6cf7;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .bottom-link a:hover { text-decoration: underline; }
+
+  .hint {
+    text-align: center;
+    font-size: 12px;
+    color: #a0a5b0;
+    margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <div class="login-header">
+    <h1>🎓 学生管理系统</h1>
+    <p>请先登录后使用</p>
+  </div>
+
+  <div class="login-body">
+    <div id="msg" class="msg"></div>
+
+    <div class="field">
+      <label>用户名</label>
+      <input id="username" placeholder="请输入用户名" autocomplete="username">
+    </div>
+
+    <div class="field">
+      <label>密码</label>
+      <input id="password" type="password" placeholder="请输入密码" autocomplete="current-password">
+    </div>
+
+    <button class="btn-login" onclick="doLogin()">登 录</button>
+
+    <div class="bottom-link">
+      还没有账号？<a href="register.html">去注册</a>
+    </div>
+
+    <div class="hint">测试账号：admin / 123456</div>
+  </div>
+</div>
+
+<script>
+  // 页面打开时，如果已经登录过（有 token），直接进主页
+  if (localStorage.getItem('token')) {
+    location.href = 'index.html';
+  }
+
+  // 支持按回车登录
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { doLogin(); }
+  });
+
+  function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!username) { showMsg('请输入用户名', 'error'); return; }
+    if (!password) { showMsg('请输入密码', 'error'); return; }
+
+    fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, password: password })
+    })
+      .then(res => res.text())
+      .then(text => {
+        // 判断返回的是不是 token：JWT 一定有 2 个点，分成 3 段
+        if (text.split('.').length === 3) {
+          // 是 token → 登录成功
+          localStorage.setItem('token', text);
+          showMsg('登录成功，正在进入系统...', 'success');
+          setTimeout(() => { location.href = 'index.html'; }, 600);
+        } else {
+          // 不是 token → 是后端返回的错误提示（如"账号或密码错误"）
+          showMsg(text, 'error');
+        }
+      })
+      .catch(err => showMsg('登录失败：' + err, 'error'));
+  }
+
+  function showMsg(text, type) {
+    const msg = document.getElementById('msg');
+    msg.textContent = text;
+    msg.className = 'msg ' + type;
+    msg.style.display = 'block';
+  }
+</script>
+
+</body>
+</html>

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import java.util.Map;
+import com.example.studentsysteam.annotation.RequireAdmin;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class StudentController {
         return studentService.list();
     }
 
+    @RequireAdmin
     @PostMapping("/student")
     public String add(@Valid@RequestBody Student student){
         studentService.add(student);
@@ -38,12 +40,14 @@ public class StudentController {
         return studentService.page(page, size);
     }
 
+    @RequireAdmin
     @DeleteMapping("/student/{id}")
     public String delete(@PathVariable Integer id){
         studentService.delete(id);
         return "删除成功";
     }
 
+    @RequireAdmin
     @PutMapping("/student")
     public String update(@Valid @RequestBody Student student){
         studentService.update(student);
@@ -61,6 +65,7 @@ public class StudentController {
         return studentService.findByCondition(name, gender);
     }
 
+    @RequireAdmin
     @DeleteMapping("/student/batch")
     public String deleteBatch(@RequestBody List<Integer> ids) {
         studentService.deleteByIds(ids);

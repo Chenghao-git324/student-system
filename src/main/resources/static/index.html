@@ -254,6 +254,12 @@
             <option value="女">女</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>班级</label>
+          <select id="classId">
+            <option value="">未分班</option>
+          </select>
+        </div>
         <button class="btn-add" id="btnAdd" onclick="addStudent()">新增</button>
         <button class="btn-save" id="btnSave" style="display:none" onclick="saveEdit()">保存</button>
         <button class="btn-cancel" id="btnCancel" style="display:none" onclick="cancelEdit()">取消</button>
@@ -344,12 +350,19 @@
     options.headers['Authorization'] = 'Bearer ' + token;
 
     return fetch(url, options).then(res => {
-      // 后端拦截器返回 401 = 没登录 / token 失效 → 清掉 token，踢回登录页
+      // 401 = 没登录 / token 失效 → 清掉 token，踢回登录页
       if (res.status === 401) {
         localStorage.removeItem('token');
         alert('登录已过期，请重新登录');
         location.href = 'login.html';
         return Promise.reject('未登录');
+      }
+      // 403 = 登录了但没权限 → 不跳登录页（用户还登录着呢），只弹提示
+      if (res.status === 403) {
+        return res.json().then(body => {
+          alert(body.msg || '无权限执行此操作');
+          return Promise.reject('无权限');
+        });
       }
       return res;
     });
@@ -370,8 +383,23 @@
 
   window.onload = function () {
     document.getElementById('currentUser').textContent = '👤 ' + getUsernameFromToken();
+    loadClasses();
     loadList();
   };
+
+  // 加载班级下拉框（选项从后端动态获取，不能写死在 HTML 里）
+  function loadClasses() {
+    authFetch('/class/list')
+      .then(res => res.json())
+      .then(list => {
+        const sel = document.getElementById('classId');
+        sel.innerHTML = '<option value="">未分班</option>';
+        list.forEach(c => {
+          sel.innerHTML += `<option value="${c.id}">${c.className}</option>`;
+        });
+      })
+      .catch(err => showTip('加载班级列表失败：' + err, 'error'));
+  }
 
   // 分页查询学生
   function loadList() {
@@ -411,7 +439,7 @@
           <td>${gtag}</td>
           <td>${cls}</td>
           <td>
-            <button class="btn-edit" onclick="editStudent(${s.id}, '${s.name}', ${s.age}, '${s.gender}')">编辑</button>
+            <button class="btn-edit" onclick="editStudent(${s.id}, '${s.name}', ${s.age}, '${s.gender}', ${s.classId})">编辑</button>
             <button class="btn-del" onclick="deleteStudent(${s.id})">删除</button>
           </td>
         </tr>`;
@@ -534,6 +562,7 @@
     const name = document.getElementById('name').value.trim();
     const age = document.getElementById('age').value.trim();
     const gender = document.getElementById('gender').value;
+    const classId = document.getElementById('classId').value;
 
     if (!name) { showTip('请输入姓名', 'error'); return; }
     if (!validAge(age)) return;
@@ -541,7 +570,12 @@
     authFetch('/student', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, age: parseInt(age), gender })
+      body: JSON.stringify({
+        name,
+        age: parseInt(age),
+        gender,
+        classId: classId ? parseInt(classId) : null   // 没选班级就传 null
+      })
     })
       .then(res => res.text())
       .then(msg => {
@@ -553,11 +587,12 @@
   }
 
   // 点击"编辑"
-  function editStudent(id, name, age, gender) {
+  function editStudent(id, name, age, gender, classId) {
     editingId = id;
     document.getElementById('name').value = name;
     document.getElementById('age').value = age;
     document.getElementById('gender').value = gender;
+    document.getElementById('classId').value = classId ? classId : '';   // 回填班级
 
     document.getElementById('formTitle').textContent = '✏️ 编辑学生 #' + id;
     document.getElementById('btnAdd').style.display = 'none';
@@ -570,6 +605,7 @@
     const name = document.getElementById('name').value.trim();
     const age = document.getElementById('age').value.trim();
     const gender = document.getElementById('gender').value;
+    const classId = document.getElementById('classId').value;
 
     if (!name) { showTip('请输入姓名', 'error'); return; }
     if (!validAge(age)) return;
@@ -577,7 +613,13 @@
     authFetch('/student', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: editingId, name, age: parseInt(age), gender })
+      body: JSON.stringify({
+        id: editingId,
+        name,
+        age: parseInt(age),
+        gender,
+        classId: classId ? parseInt(classId) : null
+      })
     })
       .then(res => res.text())
       .then(msg => {
@@ -616,6 +658,7 @@
     document.getElementById('name').value = '';
     document.getElementById('age').value = '';
     document.getElementById('gender').value = '男';
+    document.getElementById('classId').value = '';
   }
 
   // 显示提示

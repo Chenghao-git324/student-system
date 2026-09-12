@@ -26,7 +26,7 @@ public class LoginController {
         }
 
         // 登录成功 → 拿用户名生成一个 token 返回
-        return jwtUtil.createToken(result.getUsername());
+        return jwtUtil.createToken(result.getUsername(), result.getRole());
     }
 
     @PostMapping("/register")

@@ -25,4 +25,5 @@ Map<String,Object> page(int page,int size);
 
     Student findByIdWithClass(Integer id);
 
+
 }

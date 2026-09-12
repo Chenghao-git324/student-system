@@ -6,6 +6,8 @@ import com.example.studentsysteam.service.ClassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.studentsysteam.entity.Classes;
+import java.util.List;
 
 @Service
 public class ClassServiceImpl implements ClassService {
@@ -26,5 +28,11 @@ public class ClassServiceImpl implements ClassService {
         // 第 2 步：再删班级本身
         classMapper.deleteClass(id);
     }
+
+    @Override
+    public List<Classes> list() {
+        return classMapper.findAll();
+    }
+
 }
 

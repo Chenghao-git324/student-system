@@ -16,13 +16,13 @@ public  interface StudentMapper {
     @Select("select s.id, s.name, s.age, s.gender, s.class_id as classId, c.class_name as className from student s left join classes c on s.class_id = c.id limit #{offset},#{size}")
     List<Student> findByPage(@Param("offset") int offset, @Param("size") int size);
 
-    @Insert("insert into student ( name, age, gender) values (#{name}, #{age}, #{gender})")
+    @Insert("insert into student (name, age, gender, class_id) values (#{name}, #{age}, #{gender}, #{classId})")
     void insert(Student student);
 
     @Delete("delete from student where id =#{id}")
     void deleteById(Integer id);
 
-@Update("update student set name =#{name},age=#{age},gender=#{gender} where id=#{id}")
+@Update("update student set name =#{name},age=#{age},gender=#{gender},class_id=#{classId} where id=#{id}")
     void update(Student student);
 
    @Select ("select id,name ,age ,gender from student where id =#{id}")
@@ -38,5 +38,6 @@ Student  findById(@Param("id") Integer id);
 
     @Delete("delete from student where class_id = #{classId}")
     void deleteStudentByClassId(@Param("classId") Integer classId);
+
 
 }

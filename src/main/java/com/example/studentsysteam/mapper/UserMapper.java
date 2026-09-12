@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Insert;
 public interface UserMapper {
 
     // 只按用户名查（密码不参与查询，改由 BCrypt 比对）
-    @Select("select id, username, password from users where username = #{username}")
+    @Select("select id, username, password, role from users where username = #{username}")
     User findByUsername(@Param("username") String username);
 
     // 新增用户（注意：传进来的 password 已经是加密后的哈希了）

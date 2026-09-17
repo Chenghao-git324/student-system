@@ -12,8 +12,11 @@ import java.util.Date;
 public class JwtUtil {
 
     // 密钥（相当于"印章"），HS256 算法要求至少 32 个字符
-    // ⚠️ 生产环境请换成自己的随机密钥，且不要提交到公开仓库
-    private static final String SECRET = "studentSystemSecretKeyForJwt1234567890";
+    // 优先从环境变量 JWT_SECRET 读取；读不到时用下面这个"开发专用"兜底值
+    // ⚠️ 兜底值是明显假的、只用于本地跑起来，绝不能用于生产环境
+    private static final String SECRET = System.getenv("JWT_SECRET") != null
+            ? System.getenv("JWT_SECRET")
+            : "dev-secret-key-do-not-use-in-production-32chars";
 
     // 把密钥字符串变成密钥对象
     private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
